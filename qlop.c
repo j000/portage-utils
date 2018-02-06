@@ -376,7 +376,7 @@ show_sync_history(const char *logfile, time_t start_time, time_t end_time)
 	fclose(fp);
 }
 
-static void show_current_emerge(void);
+static void show_current_emerge(int do_time, char *logfile);
 #ifdef __linux__
 # include <asm/param.h>
 # include <elf.h>
@@ -414,7 +414,7 @@ root_readlink(const int pid)
 		return path;
 }
 
-void show_current_emerge(void)
+void show_current_emerge(int do_time, char* logfile)
 {
 	DIR *proc;
 	struct dirent *de;
@@ -484,6 +484,20 @@ void show_current_emerge(void)
 				GREEN, chop_ctime(start_date), NORM);
 			print_seconds_for_earthlings(uptime_secs - (start_time / hz));
 			puts(NORM);
+
+			if (do_time) {
+				char *tmp = strrchr(p, '-');
+				if (tmp != NULL) {
+					*tmp = '\0';
+					if (tmp[1] == 'p' || tmp[1] == 'r') {
+						tmp = strrchr(p, '-');
+						if (tmp != NULL)
+							*tmp = '\0';
+					}
+				}
+				show_merge_times(p, logfile, 1, 1, 0, LONG_MAX);
+			}
+
 			p = root_readlink(pid);
 			if (p && strcmp(p, "/"))
 				printf("     chroot:  %s%s%s\n", GREEN, p, NORM);
@@ -812,7 +826,7 @@ int qlop_main(int argc, char **argv)
 		show_emerge_history(flags, atoms, logfile, start_time, end_time);
 
 	if (do_current)
-		show_current_emerge();
+		show_current_emerge(do_time, logfile);
 	if (do_sync)
 		show_sync_history(logfile, start_time, end_time);
 
